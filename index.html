@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PD5 Daus i Robots - Joc Educatiu</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Dice Roll Shake Animation */
+        @keyframes diceShake {
+            0% { transform: rotate(0deg) scale(1); }
+            20% { transform: rotate(-18deg) scale(1.15); }
+            40% { transform: rotate(18deg) scale(1.15); }
+            60% { transform: rotate(-12deg) scale(1.08); }
+            80% { transform: rotate(12deg) scale(1.08); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+
+        .animate-shake {
+            animation: diceShake 0.4s ease-in-out;
+        }
+
+        /* Smooth Fluid Track Progress */
+        .track-smooth {
+            transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .robot-head-smooth {
+            transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Smooth Vertical Bar Heights */
+        .bar-height-smooth {
+            transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <header class="bg-indigo-600 text-white shadow-md py-3.5 px-4 sm:px-6 border-b-4 border-indigo-800">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="tornarAInici()">
+                <div class="bg-amber-400 text-indigo-950 p-2.5 rounded-2xl shadow-md text-2xl font-black flex items-center justify-center">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-wide leading-tight">PD5 Daus i Robots</h1>
+                    <p class="text-xs text-indigo-100 font-medium hidden sm:block">Curses Ràpides i Simulació de Pensament Computacional</p>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div id="header-game-controls" class="hidden flex items-center gap-2">
+                <button onclick="tornarAInici()" class="bg-indigo-700 hover:bg-indigo-800 active:scale-95 text-white font-bold py-2 px-3.5 rounded-xl shadow transition text-xs sm:text-sm flex items-center gap-1.5 border border-indigo-500">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Inici</span>
+                </button>
+                <button onclick="reiniciarPartidaActual()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-2 px-3.5 rounded-xl shadow transition text-xs sm:text-sm flex items-center gap-1.5 border-b-2 border-amber-700">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Nova Partida</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1 flex flex-col justify-center">
+
+        <!-- SCREEN 1: Game Selection Menu -->
+        <div id="screen-menu" class="max-w-4xl mx-auto w-full my-auto py-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl sm:text-4xl font-black text-indigo-900 mb-2">Tria un Mode de Joc</h2>
+                <p class="text-slate-600 text-sm sm:text-base max-w-xl mx-auto">Selecciona quin tipus de cursa vols fer. Les estadístiques, l'historial i les simulacions es guarden de forma independent.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Game 1 Card -->
+                <div onclick="iniciarJoc(1)" class="group bg-white rounded-3xl p-6 shadow-xl border-4 border-teal-200 hover:border-teal-500 transition-all cursor-pointer transform hover:-translate-y-1 flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-teal-50 rounded-full group-hover:scale-125 transition-transform -z-0"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="bg-teal-100 text-teal-800 text-xs font-black uppercase px-3 py-1 rounded-full border border-teal-200">Mode Bàsic</span>
+                            <div class="w-12 h-12 bg-teal-500 text-white rounded-2xl flex items-center justify-center text-2xl font-black shadow-md">
+                                <i class="fa-solid fa-dice-one"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-3xl font-black  flex items-center justify-center text-slate-800 mb-2 group-hover:text-teal-600 transition">Joc 1</h3>
+                    </div>
+
+                    <button class="relative z-10 w-full bg-teal-500 hover:bg-teal-600 text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2 group-hover:shadow-lg">
+                        <span>JUGAR AL JOC 1</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Game 2 Card -->
+                <div onclick="iniciarJoc(2)" class="group bg-white rounded-3xl p-6 shadow-xl border-4 border-purple-200 hover:border-purple-500 transition-all cursor-pointer transform hover:-translate-y-1 flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-purple-50 rounded-full group-hover:scale-125 transition-transform -z-0"></div>
+
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="bg-purple-100 text-purple-800 text-xs font-black uppercase px-3 py-1 rounded-full border border-purple-200">Mode Pro</span>
+                            <div class="w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center text-2xl font-black shadow-md">
+                                <i class="fa-solid fa-dice"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-3xl font-black  flex items-center justify-center text-slate-800 mb-2 group-hover:text-purple-600 transition">Joc 2</h3>
+
+                    </div>
+
+                    <button class="relative z-10 w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2 group-hover:shadow-lg">
+                        <span>JUGAR AL JOC 2</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: Active Race Screen -->
+        <div id="screen-game" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+            <!-- Left / Center: Race Tracks (7 Cols) -->
+            <section class="lg:col-span-7 flex flex-col gap-4">
+
+                <!-- Header Info Bar -->
+                <div class="bg-white p-3.5 rounded-2xl shadow-md border-2 border-indigo-100 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span id="badge-game-mode" class="bg-indigo-600 text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider">
+                            JOC 1
+                        </span>
+                        <span id="title-game-mode" class="text-xs sm:text-sm font-extrabold text-slate-700">
+                            6 Robots • Mode Bàsic
+                        </span>
+                    </div>
+
+                    <!-- Current Match Counter -->
+                    <div class="flex items-center gap-2 bg-amber-50 border-2 border-amber-300 px-3.5 py-1 rounded-xl ml-auto">
+                        <i class="fa-solid fa-stopwatch text-amber-600 text-base"></i>
+                        <div>
+                            <span class="block text-[10px] font-extrabold uppercase text-amber-800 tracking-wider">Tirades Partida</span>
+                            <span id="comptador-tirades" class="text-lg font-black text-amber-900 leading-none">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Continuous Race Tracks Board -->
+                <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-lg border-4 border-indigo-100 relative">
+                    <div class="flex justify-between items-center mb-3 px-1 border-b pb-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-flag-checkered text-emerald-500 text-sm"></i> Pista Contínua (Meta a 4 passes)
+                        </span>
+                    </div>
+
+                    <!-- Track Lanes Dynamic Container -->
+                    <div id="pistes-container" class="space-y-2">
+                        <!-- Injected via JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Controls, Total Games Counter, Charts & Match History (5 Cols) -->
+            <section class="lg:col-span-5 flex flex-col gap-4">
+
+                <!-- Roll Dice Interactive Box -->
+                <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-lg border-4 border-amber-300 flex flex-col items-center text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full bg-amber-400 py-1 text-[11px] font-black uppercase text-amber-950 tracking-wider">
+                        Llançament de Daus
+                    </div>
+
+                    <!-- Visual Dice Display -->
+                    <div class="mt-4 mb-3 min-h-[80px] flex items-center justify-center gap-3">
+                        <!-- Dice 1 -->
+                        <div id="visual-dau-1" class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-2xl shadow-lg flex items-center justify-center border-4 border-white transition transform">
+                            <i id="icona-dau-1" class="fa-solid fa-dice-one text-3xl"></i>
+                        </div>
+
+                        <!-- Plus Symbol for Game 2 -->
+                        <div id="signe-mes" class="hidden text-2xl font-black text-amber-500">+</div>
+
+                        <!-- Dice 2 -->
+                        <div id="visual-dau-2" class="hidden w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl shadow-lg flex items-center justify-center border-4 border-white transition transform">
+                            <i id="icona-dau-2" class="fa-solid fa-dice-one text-3xl"></i>
+                        </div>
+                    </div>
+
+                    <!-- Dice Outcome Banner -->
+                    <div id="resultat-dau-box" class="min-h-[38px] w-full bg-slate-50 border border-slate-200 rounded-xl p-2 mb-3 flex items-center justify-center text-xs font-extrabold text-slate-700">
+                        <span id="resultat-dau-text" class="text-slate-400 italic">Prem BOTO o ESPAI per moure!</span>
+                    </div>
+
+                    <!-- Roll Button -->
+                    <button id="btn-tirar-dau" onclick="tirarDaus()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-95 text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-lg text-base transition flex items-center justify-center gap-2 border-b-4 border-teal-800">
+                        <i class="fa-solid fa-dice text-xl"></i>
+                        <span id="text-btn-tirar">TIRAR EL DAU</span>
+                    </button>
+                    
+                    <span class="mt-2 text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                        <kbd class="bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 text-slate-600 font-mono">Espai</kbd> Tecla d'Espai per tirar
+                    </span>
+                </div>
+
+                <!-- NEW FEATURE: Automated Match Simulator -->
+                <div class="bg-white p-4 rounded-3xl shadow-lg border-4 border-sky-300 flex flex-col gap-3 relative overflow-hidden">
+                    <div class="flex items-center justify-between border-b pb-2">
+                        <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-bolt text-sky-500 text-base"></i> Simulador de Partides
+                        </h3>
+                        <span class="text-[10px] font-extrabold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-md uppercase">Ràpid</span>
+                    </div>
+
+                    <p class="text-xs text-slate-500">
+                        Simula automàticament partides completes d'acord amb les regles d'aquest mode.
+                    </p>
+
+                    <!-- Simulation Buttons -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button onclick="simularPartides(10)" class="bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-extrabold py-2 px-2 rounded-xl text-xs shadow transition border-b-2 border-sky-700 flex items-center justify-center gap-1">
+                            <span>10</span>
+                        </button>
+                        <button onclick="simularPartides(50)" class="bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-extrabold py-2 px-2 rounded-xl text-xs shadow transition border-b-2 border-sky-800 flex items-center justify-center gap-1">
+                            <span>50</span>
+                        </button>
+                        <button onclick="simularPartides(100)" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold py-2 px-2 rounded-xl text-xs shadow transition border-b-2 border-indigo-800 flex items-center justify-center gap-1">
+                            <span>100</span>
+                        </button>
+                        <button onclick="simularPartides(1000)" class="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-extrabold py-2 px-2 rounded-xl text-xs shadow transition border-b-2 border-purple-800 flex items-center justify-center gap-1">
+                            <span>1000</span>
+                        </button>
+                    </div>
+
+                    <!-- Simulation Graph & Results Container -->
+                    <div id="simulacio-resultats-box" class="bg-slate-50 border border-slate-200 rounded-2xl p-3 pt-4 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-600">
+                            <span>Resultats de Simulació:</span>
+                            <span id="sim-count-label" class="text-sky-600 font-extrabold">0 partides</span>
+                        </div>
+
+                        <!-- Vertical Bar Chart for Simulation -->
+                        <div id="grafic-simulacio-container" class="h-32 flex items-end justify-between gap-1 px-0.5 border-b border-slate-200 pb-1">
+                            <div class="text-slate-400 text-xs italic text-center w-full my-auto">Fes clic en un botó superior per simular.</div>
+                        </div>
+
+                        <div id="sim-stats-footer" class="text-[10px] font-bold text-slate-500 flex justify-between">
+                            <span>Mitjana tirades: <strong id="sim-avg-turns" class="text-slate-700">--</strong></span>
+                            <span id="sim-top-winner" class="text-sky-700">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Games Played Counter & Winner Badge Row -->
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Total Games Card -->
+                    <div class="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white p-3.5 rounded-3xl shadow-lg border-2 border-indigo-400 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div class="absolute -right-4 -bottom-4 opacity-15 text-6xl">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200">Total Partides</span>
+                        <div id="stat-total-partides" class="text-3xl font-black my-0.5 leading-none text-amber-300">0</div>
+                        <span class="text-[10px] font-bold text-indigo-100">Jugades en aquest mode</span>
+                    </div>
+
+                    <!-- Most Winner Robot Card -->
+                    <div class="bg-white p-3.5 rounded-3xl shadow-lg border-2 border-indigo-100 flex flex-col items-center justify-center text-center">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Robot Més Guanyador</span>
+                        <div id="stat-més-guanyador" class="text-sm font-black text-indigo-900 truncate w-full my-1">--</div>
+                        <span class="text-[10px] font-bold text-slate-500">Més victòries reals</span>
+                    </div>
+                </div>
+
+                <!-- Vertical Bar Chart Section (Real Matches) -->
+                <div class="bg-white p-4 rounded-3xl shadow-lg border-2 border-slate-200 flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b pb-2">
+                        <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-simple text-indigo-600"></i> Victòries Partides Reals
+                        </h3>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gràfic Vertical</span>
+                    </div>
+
+                    <!-- Vertical Bar Chart Container -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 pt-6">
+                        <div id="grafic-barres-vertical-container" class="h-36 flex items-end justify-between gap-1 px-0.5">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match History Panel -->
+                <div class="bg-white p-4 rounded-3xl shadow-lg border-2 border-slate-200 flex flex-col gap-2">
+                    <div class="flex items-center justify-between border-b pb-2">
+                        <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> Historial de Partides
+                        </h3>
+                        <button onclick="obrirModalResetHistorial()" title="Esborrar Historial" class="text-[11px] text-rose-500 hover:text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100 transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i>Netejar
+                        </button>
+                    </div>
+
+                    <div id="llista-historial-partides" class="max-h-32 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <!-- Victory Modal -->
+    <div id="modal-victoria" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-amber-400 p-6 max-w-sm w-full text-center transform transition-all">
+            <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-3 border-2 border-amber-300 shadow-inner">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800 mb-1">¡PARTIDA FINALITZADA!</h2>
+            <p id="modal-guanyador-text" class="text-lg font-extrabold text-teal-600 mb-3">El Robot 4 ha guanyat!</p>
+
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-3.5 mb-5 text-center">
+                <span class="text-xs uppercase font-extrabold text-indigo-500 tracking-wider block">Tirades utilitzades</span>
+                <div class="text-3xl font-black text-indigo-900 my-0.5" id="modal-tirades-num">0</div>
+                <span class="text-[11px] font-medium text-indigo-700">Afegit a l'historial del joc actual</span>
+            </div>
+
+            <button onclick="tancarModalIReiniciar()" class="w-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold py-3.5 px-5 rounded-2xl shadow-lg transition text-base flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i> Continuar / Nova Partida
+            </button>
+        </div>
+    </div>
+
+    <!-- Confirm Clear History Modal -->
+    <div id="modal-confirm-reset" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center">
+            <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-lg font-extrabold text-slate-800 mb-1">Esborrar Historial?</h3>
+            <p class="text-xs text-slate-600 mb-5">Això esborrarà l'historial, les estadístiques i les simulacions del joc seleccionat.</p>
+            <div class="flex gap-2">
+                <button onclick="tancarModalResetHistorial()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-3 rounded-xl text-xs transition">
+                    Cancel·lar
+                </button>
+                <button onclick="executarResetHistorial()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-md transition">
+                    Sí, Esborrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-slate-300 text-center py-4 px-4 text-xs font-medium border-t border-slate-700 mt-6">
+        <p>Adaptació creada per Aurora Pelejà del Olmo, a partir de la font original <a href="https://osoler8.github.io/pd5dausrobots/" target="_blank" class="text-amber-400 hover:text-amber-300 underline font-bold transition">https://osoler8.github.io/pd5dausrobots/</a></p>
+    </footer>
+
+    <script>
+        // Track settings: Short continuous distance (4 steps to finish line)
+        const STEPS_TO_WIN = 4;
+
+        // Color palette for all 12 robots
+        const ROBOT_COLORS = {
+            1: { bg: 'bg-red-500', barBg: 'bg-red-500', text: 'text-red-600' },
+            2: { bg: 'bg-orange-500', barBg: 'bg-orange-500', text: 'text-orange-600' },
+            3: { bg: 'bg-amber-500', barBg: 'bg-amber-500', text: 'text-amber-600' },
+            4: { bg: 'bg-emerald-500', barBg: 'bg-emerald-500', text: 'text-emerald-600' },
+            5: { bg: 'bg-teal-500', barBg: 'bg-teal-500', text: 'text-teal-600' },
+            6: { bg: 'bg-cyan-500', barBg: 'bg-cyan-500', text: 'text-cyan-600' },
+            7: { bg: 'bg-blue-500', barBg: 'bg-blue-500', text: 'text-blue-600' },
+            8: { bg: 'bg-indigo-500', barBg: 'bg-indigo-500', text: 'text-indigo-600' },
+            9: { bg: 'bg-purple-500', barBg: 'bg-purple-500', text: 'text-purple-600' },
+            10: { bg: 'bg-fuchsia-500', barBg: 'bg-fuchsia-500', text: 'text-fuchsia-600' },
+            11: { bg: 'bg-pink-500', barBg: 'bg-pink-500', text: 'text-pink-600' },
+            12: { bg: 'bg-rose-700', barBg: 'bg-rose-700', text: 'text-rose-700' }
+        };
+
+        const DICE_ICONS = {
+            1: 'fa-dice-one',
+            2: 'fa-dice-two',
+            3: 'fa-dice-three',
+            4: 'fa-dice-four',
+            5: 'fa-dice-five',
+            6: 'fa-dice-six'
+        };
+
+        // Application State
+        let currentGameMode = 1; // 1 or 2
+        let robotSteps = {};
+        let matchTurns = 0;
+        let isMatchFinished = false;
+
+        // Independent histories & simulations per game mode
+        let gameHistories = { 1: [], 2: [] };
+        let simulationData = {
+            1: { totalSimulated: 0, wins: {}, totalTurns: 0 },
+            2: { totalSimulated: 0, wins: {}, totalTurns: 0 }
+        };
+
+        window.onload = function() {
+            carregarHistorialsLocals();
+
+            // Keyboard Spacebar event listener for rolling dice
+            document.addEventListener('keydown', function(event) {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    const modalVic = document.getElementById('modal-victoria');
+                    if (!modalVic.classList.contains('hidden')) {
+                        tancarModalIReiniciar();
+                    } else if (currentGameMode !== 0 && !isMatchFinished) {
+                        tirarDaus();
+                    }
+                }
+            });
+        };
+
+        function carregarHistorialsLocals() {
+            try {
+                const savedHist = localStorage.getItem('pd5_daus_histories');
+                if (savedHist) gameHistories = JSON.parse(savedHist);
+
+                const savedSim = localStorage.getItem('pd5_daus_simulations');
+                if (savedSim) simulationData = JSON.parse(savedSim);
+            } catch (e) {
+                console.error("Error carregant localStorage", e);
+            }
+        }
+
+        function desarHistorialsLocals() {
+            try {
+                localStorage.setItem('pd5_daus_histories', JSON.stringify(gameHistories));
+                localStorage.setItem('pd5_daus_simulations', JSON.stringify(simulationData));
+            } catch (e) {
+                console.error("Error desant localStorage", e);
+            }
+        }
+
+        function tornarAInici() {
+            document.getElementById('screen-menu').classList.remove('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('header-game-controls').classList.add('hidden');
+        }
+
+        function iniciarJoc(mode) {
+            currentGameMode = mode;
+
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            document.getElementById('header-game-controls').classList.remove('hidden');
+
+            const badge = document.getElementById('badge-game-mode');
+            const title = document.getElementById('title-game-mode');
+            const btnText = document.getElementById('text-btn-tirar');
+
+            if (mode === 1) {
+                badge.innerText = 'JOC 1';
+                badge.className = 'bg-teal-600 text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider';
+                title.innerText = '6 Robots • Mode Bàsic';
+                btnText.innerText = 'TIRAR EL DAU (1 DAU)';
+
+                document.getElementById('signe-mes').classList.add('hidden');
+                document.getElementById('visual-dau-2').classList.add('hidden');
+            } else {
+                badge.innerText = 'JOC 2';
+                badge.className = 'bg-purple-600 text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider';
+                title.innerText = '12 Robots • Mode Pro';
+                btnText.innerText = 'TIRAR ELS DAUS (2 DAUS)';
+
+                document.getElementById('signe-mes').classList.remove('hidden');
+                document.getElementById('visual-dau-2').classList.remove('hidden');
+            }
+
+            inicialitzarPartida();
+        }
+
+        function inicialitzarPartida() {
+            matchTurns = 0;
+            isMatchFinished = false;
+            robotSteps = {};
+
+            const minRobot = 1;
+            const maxRobot = currentGameMode === 1 ? 6 : 12;
+
+            for (let i = minRobot; i <= maxRobot; i++) {
+                robotSteps[i] = 0;
+            }
+
+            document.getElementById('comptador-tirades').innerText = '0';
+            document.getElementById('resultat-dau-text').innerText = 'Prem BOTO o ESPAI per moure!';
+
+            renderitzarPistes();
+            actualitzarEstadistiquesIHistorial();
+            renderitzarGraficSimulacio();
+        }
+
+        function renderitzarPistes() {
+            const container = document.getElementById('pistes-container');
+            container.innerHTML = '';
+
+            const minRobot = 1;
+            const maxRobot = currentGameMode === 1 ? 6 : 12;
+
+            for (let r = minRobot; r <= maxRobot; r++) {
+                const colors = ROBOT_COLORS[r] || ROBOT_COLORS[1];
+                const steps = robotSteps[r] || 0;
+                const percentage = Math.min(100, (steps / STEPS_TO_WIN) * 100);
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 sm:gap-3';
+
+                // Robot Badge
+                const badge = document.createElement('div');
+                badge.className = `${colors.bg} text-white w-7 sm:w-8 h-7 sm:h-8 rounded-xl flex items-center justify-center font-black text-xs shadow-sm flex-shrink-0 border-2 border-white`;
+                badge.innerHTML = `<span>${r}</span>`;
+                row.appendChild(badge);
+
+                // Track Progress Wrapper
+                const trackWrapper = document.createElement('div');
+                trackWrapper.className = 'flex-1 bg-slate-100 h-6 sm:h-7 rounded-2xl border-2 border-slate-200 relative overflow-hidden flex items-center px-1 shadow-inner';
+
+                // Start Marker
+                const startLabel = document.createElement('span');
+                startLabel.className = 'absolute left-2 text-[9px] font-extrabold text-slate-400 select-none z-0';
+                startLabel.innerText = 'S';
+                trackWrapper.appendChild(startLabel);
+
+                // Finish Flag
+                const finishFlag = document.createElement('div');
+                finishFlag.className = 'absolute right-2 text-emerald-600 text-xs z-0 flex items-center font-bold';
+                finishFlag.innerHTML = '<i class="fa-solid fa-flag-checkered"></i>';
+                trackWrapper.appendChild(finishFlag);
+
+                // Smooth Progress Bar
+                const progressBar = document.createElement('div');
+                progressBar.className = `absolute left-0 top-0 bottom-0 ${colors.barBg} opacity-75 track-smooth rounded-l-2xl`;
+                progressBar.style.width = `${percentage}%`;
+                trackWrapper.appendChild(progressBar);
+
+                // Robot Marker Icon
+                const robotHead = document.createElement('div');
+                robotHead.className = `absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${colors.bg} text-white px-2 py-0.5 rounded-lg shadow-md border border-white font-black text-[10px] flex items-center gap-1 z-10 robot-head-smooth`;
+                
+                const adjustedLeft = 5 + (percentage * 0.88);
+                robotHead.style.left = `${adjustedLeft}%`;
+                robotHead.innerHTML = `<i class="fa-solid fa-robot text-[9px]"></i> ${r}`;
+                trackWrapper.appendChild(robotHead);
+
+                row.appendChild(trackWrapper);
+                container.appendChild(row);
+            }
+        }
+
+        function tirarDaus() {
+            if (isMatchFinished) return;
+
+            const btnTirar = document.getElementById('btn-tirar-dau');
+            const dau1El = document.getElementById('visual-dau-1');
+            const dau2El = document.getElementById('visual-dau-2');
+            const icona1 = document.getElementById('icona-dau-1');
+            const icona2 = document.getElementById('icona-dau-2');
+            const resultatBox = document.getElementById('resultat-dau-text');
+
+            btnTirar.disabled = true;
+            btnTirar.classList.add('opacity-50', 'cursor-not-allowed');
+
+            dau1El.classList.add('animate-shake');
+            if (currentGameMode === 2) dau2El.classList.add('animate-shake');
+
+            resultatBox.innerHTML = '<span class="text-indigo-600 font-bold animate-pulse">Rodant...</span>';
+
+            setTimeout(() => {
+                let val1 = Math.floor(Math.random() * 6) + 1;
+                let val2 = Math.floor(Math.random() * 6) + 1;
+                let targetRobot = 0;
+
+                icona1.className = `fa-solid ${DICE_ICONS[val1]} text-3xl`;
+
+                if (currentGameMode === 1) {
+                    targetRobot = val1;
+                    resultatBox.innerHTML = `Ha sortit un <b class="text-teal-600 font-black text-base mx-1">${val1}</b>! Avança el <b>Robot ${targetRobot}</b>.`;
+                } else {
+                    icona2.className = `fa-solid ${DICE_ICONS[val2]} text-3xl`;
+                    targetRobot = val1 + val2;
+                    resultatBox.innerHTML = `${val1} + ${val2} = <b class="text-purple-600 font-black text-base mx-1">${targetRobot}</b>! Avança el <b>Robot ${targetRobot}</b>.`;
+                }
+
+                dau1El.classList.remove('animate-shake');
+                dau2El.classList.remove('animate-shake');
+
+                matchTurns++;
+                document.getElementById('comptador-tirades').innerText = matchTurns;
+
+                moureRobot(targetRobot);
+
+                btnTirar.disabled = false;
+                btnTirar.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            }, 300);
+        }
+
+        function moureRobot(robotNum) {
+            if (robotSteps[robotNum] !== undefined) {
+                robotSteps[robotNum] += 1;
+                renderitzarPistes();
+
+                if (robotSteps[robotNum] >= STEPS_TO_WIN) {
+                    finalitzarPartida(robotNum);
+                }
+            }
+        }
+
+        function finalitzarPartida(winnerRobot) {
+            isMatchFinished = true;
+
+            try {
+                confetti({
+                    particleCount: 110,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            } catch (e) {}
+
+            const record = {
+                id: Date.now(),
+                winner: winnerRobot,
+                turns: matchTurns,
+                date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            gameHistories[currentGameMode].unshift(record);
+            desarHistorialsLocals();
+            actualitzarEstadistiquesIHistorial();
+
+            const color = ROBOT_COLORS[winnerRobot] || ROBOT_COLORS[1];
+            const modalGuanyador = document.getElementById('modal-guanyador-text');
+            modalGuanyador.innerText = `¡El Robot ${winnerRobot} ha guanyat la carrera!`;
+            modalGuanyador.className = `text-lg font-extrabold ${color.text} mb-3`;
+
+            document.getElementById('modal-tirades-num').innerText = matchTurns;
+            document.getElementById('modal-victoria').classList.remove('hidden');
+        }
+
+        function tancarModalIReiniciar() {
+            document.getElementById('modal-victoria').classList.add('hidden');
+            inicialitzarPartida();
+        }
+
+        function reiniciarPartidaActual() {
+            inicialitzarPartida();
+        }
+
+        // NEW FEATURE: Fast Programmatic Match Simulator
+        function simularPartides(quantitat) {
+            const minRobot = 1;
+            const maxRobot = currentGameMode === 1 ? 6 : 12;
+            const sim = simulationData[currentGameMode];
+
+            // Ensure win counters initialized
+            for (let r = minRobot; r <= maxRobot; r++) {
+                if (!sim.wins[r]) sim.wins[r] = 0;
+            }
+
+            for (let i = 0; i < quantitat; i++) {
+                let steps = {};
+                for (let r = minRobot; r <= maxRobot; r++) steps[r] = 0;
+
+                let turns = 0;
+                let winner = null;
+
+                while (!winner) {
+                    turns++;
+                    let val1 = Math.floor(Math.random() * 6) + 1;
+                    let target = val1;
+
+                    if (currentGameMode === 2) {
+                        let val2 = Math.floor(Math.random() * 6) + 1;
+                        target = val1 + val2;
+                    }
+
+                    steps[target] = (steps[target] || 0) + 1;
+                    if (steps[target] >= STEPS_TO_WIN) {
+                        winner = target;
+                    }
+                }
+
+                sim.totalSimulated++;
+                sim.totalTurns += turns;
+                sim.wins[winner] = (sim.wins[winner] || 0) + 1;
+            }
+
+            desarHistorialsLocals();
+            renderitzarGraficSimulacio();
+        }
+
+        // Render Automated Simulation Graph
+        function renderitzarGraficSimulacio() {
+            const container = document.getElementById('grafic-simulacio-container');
+            const sim = simulationData[currentGameMode];
+            const minRobot = 1;
+            const maxRobot = currentGameMode === 1 ? 6 : 12;
+
+            document.getElementById('sim-count-label').innerText = `${sim.totalSimulated} partides`;
+
+            if (!sim || sim.totalSimulated === 0) {
+                container.innerHTML = `<div class="text-slate-400 text-xs italic text-center w-full my-auto">Fes clic en un botó superior per simular.</div>`;
+                document.getElementById('sim-avg-turns').innerText = '--';
+                document.getElementById('sim-top-winner').innerText = '--';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            let maxWins = 0;
+            let topRobot = '--';
+
+            for (let r = minRobot; r <= maxRobot; r++) {
+                const w = sim.wins[r] || 0;
+                if (w > maxWins) {
+                    maxWins = w;
+                    topRobot = `Robot ${r}`;
+                }
+            }
+
+            for (let r = minRobot; r <= maxRobot; r++) {
+                const count = sim.wins[r] || 0;
+                const pct = maxWins > 0 ? (count / maxWins) * 100 : 0;
+                const colors = ROBOT_COLORS[r] || ROBOT_COLORS[1];
+
+                const col = document.createElement('div');
+                col.className = 'flex-1 flex flex-col items-center justify-end h-full min-w-0';
+
+                col.innerHTML = `
+                    <span class="text-[8px] font-black text-slate-600 mb-0.5">${count}</span>
+                    <div class="w-full bg-slate-200/70 rounded-t flex items-end justify-center h-full overflow-hidden">
+                        <div class="w-full ${colors.barBg} rounded-t bar-height-smooth" style="height: ${pct}%"></div>
+                    </div>
+                    <span class="text-[8px] font-black text-slate-600 mt-0.5">R${r}</span>
+                `;
+                container.appendChild(col);
+            }
+
+            const avgTurns = (sim.totalTurns / sim.totalSimulated).toFixed(1);
+            document.getElementById('sim-avg-turns').innerText = `${avgTurns} t/partida`;
+            document.getElementById('sim-top-winner').innerText = `Més victòries: ${topRobot}`;
+        }
+
+        function actualitzarEstadistiquesIHistorial() {
+            const historyList = gameHistories[currentGameMode] || [];
+            const minRobot = 1;
+            const maxRobot = currentGameMode === 1 ? 6 : 12;
+
+            document.getElementById('stat-total-partides').innerText = historyList.length;
+
+            let winCounts = {};
+            for (let r = minRobot; r <= maxRobot; r++) winCounts[r] = 0;
+
+            historyList.forEach(m => {
+                if (winCounts[m.winner] !== undefined) winCounts[m.winner]++;
+            });
+
+            let maxWins = 0;
+            let topWinners = [];
+
+            for (const [r, count] of Object.entries(winCounts)) {
+                if (count > maxWins) {
+                    maxWins = count;
+                    topWinners = [r];
+                } else if (count === maxWins && maxWins > 0) {
+                    topWinners.push(r);
+                }
+            }
+
+            const topWinnerEl = document.getElementById('stat-més-guanyador');
+            if (maxWins === 0) {
+                topWinnerEl.innerText = '--';
+            } else {
+                topWinnerEl.innerText = topWinners.map(w => `Robot ${w}`).join(', ') + ` (${maxWins} vic.)`;
+            }
+
+            // Render Vertical Bar Chart for Real Matches
+            const vertChartContainer = document.getElementById('grafic-barres-vertical-container');
+            vertChartContainer.innerHTML = '';
+
+            for (let r = minRobot; r <= maxRobot; r++) {
+                const count = winCounts[r];
+                const percentage = maxWins > 0 ? (count / maxWins) * 100 : 0;
+                const colors = ROBOT_COLORS[r] || ROBOT_COLORS[1];
+
+                const col = document.createElement('div');
+                col.className = 'flex-1 flex flex-col items-center justify-end h-full min-w-0';
+
+                col.innerHTML = `
+                    <span class="text-[9px] font-black text-slate-700 mb-0.5">${count}</span>
+                    <div class="w-full bg-slate-200/60 rounded-t flex items-end justify-center h-full overflow-hidden p-0.5">
+                        <div class="w-full ${colors.barBg} rounded-t bar-height-smooth" style="height: ${percentage}%"></div>
+                    </div>
+                    <span class="text-[9px] font-black text-slate-600 mt-0.5">R${r}</span>
+                `;
+                vertChartContainer.appendChild(col);
+            }
+
+            // Render History List
+            const listContainer = document.getElementById('llista-historial-partides');
+            listContainer.innerHTML = '';
+
+            if (historyList.length === 0) {
+                listContainer.innerHTML = `<div class="text-slate-400 italic text-center py-2">Cap partida en l'historial del Joc ${currentGameMode}.</div>`;
+                return;
+            }
+
+            historyList.forEach((match, index) => {
+                const colors = ROBOT_COLORS[match.winner] || ROBOT_COLORS[1];
+                const matchNum = historyList.length - index;
+
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2 rounded-xl border border-slate-100 bg-slate-50';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-400 text-[10px]">#${matchNum}</span>
+                        <span class="${colors.bg} text-white w-5 h-5 rounded-md flex items-center justify-center font-black text-[10px]">
+                            ${match.winner}
+                        </span>
+                        <span class="font-extrabold text-slate-700">Robot ${match.winner}</span>
+                    </div>
+                    <span class="font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-[11px]">
+                        ${match.turns} tirades
+                    </span>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        // Reset History & Simulation Handlers
+        function obrirModalResetHistorial() {
+            document.getElementById('modal-confirm-reset').classList.remove('hidden');
+        }
+
+        function tancarModalResetHistorial() {
+            document.getElementById('modal-confirm-reset').classList.add('hidden');
+        }
+
+        function executarResetHistorial() {
+            gameHistories[currentGameMode] = [];
+            simulationData[currentGameMode] = { totalSimulated: 0, wins: {}, totalTurns: 0 };
+
+            desarHistorialsLocals();
+            tancarModalResetHistorial();
+            inicialitzarPartida();
+        }
+    </script>
+</body>
+</html>
